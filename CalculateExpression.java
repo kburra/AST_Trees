@@ -1,6 +1,8 @@
 package com.bgsu.cs.research.task;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
 public class CalculateExpression {
@@ -11,11 +13,35 @@ public class CalculateExpression {
 	}
 	
 	public int getResult() {
-		CalculateExpressionVisitor cv = new CalculateExpressionVisitor();
-		CalculateExpression.accept(cv);
-		return (int) cv.getResult();
+		CalculateExpressionVisitor obj = new CalculateExpressionVisitor();
+		CalculateExpression.accept(obj);
+		return (int) obj.getResult();
 	}
 	
+	public static void accept(Visitor visitor) {
+		root.accept(visitor);
+	}
+	
+	private static final Map<String, int[]> OPERATORS = new HashMap<String, int[]>();  
+	private static final int LEFT_ASSOC = 0;
+	  static {  
+		  OPERATORS.put("+",new int[]{0,LEFT_ASSOC});  
+		  OPERATORS.put("-",new int[]{0,LEFT_ASSOC});  
+		  OPERATORS.put("*",new int[]{1,LEFT_ASSOC});  
+		  OPERATORS.put("/",new int[]{1,LEFT_ASSOC});          
+	  }
+	
+	  private static final int checkPrecedence(String token1, String token2) {   
+		    return OPERATORS.get(token1)[0] - OPERATORS.get(token2)[0];  
+	  }
+	  
+	  private static boolean isAssociative(String token, int type) {  
+		    if (OPERATORS.get(token)[1] == type) {  
+		      return true;  
+		    }  
+		    return false;  
+		  }  
+	  
 	private void parse(String exp) throws Exception {
 		Stack<String> st = new Stack<String>();
 	    ArrayList<String> postorder = new ArrayList<String>();
@@ -34,8 +60,12 @@ public class CalculateExpression {
 					    str = "";
 					}else{
 						inorder.add(String.valueOf(ch));
-						  while (!st.empty() && OperatorStr.contains(st.peek())) {                      
-							  postorder.add(st.pop());     
+						  while (!st.empty() && OperatorStr.contains(st.peek())) {     
+							  if ((isAssociative(String.valueOf(ch),LEFT_ASSOC)&&checkPrecedence(String.valueOf(ch), st.peek()) <= 0)||checkPrecedence(String.valueOf(ch), st.peek()) < 0) {
+							  postorder.add(st.pop()); 
+							  continue;
+							  }
+							  break;
 						  }  
 					  	st.push(String.valueOf(ch));  
 					}
@@ -99,8 +129,4 @@ public class CalculateExpression {
     root.setRightChild(build(inorder, postorder, ins + leftlength + 1, posts + leftlength, rightlength));
     return root;
   }
-  
-  public static void accept(Visitor visitor) {
-		root.accept(visitor);
-	}
 }
